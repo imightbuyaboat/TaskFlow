@@ -33,13 +33,13 @@ func NewPostgresDB(postgresURL string) (*PostgresDB, error) {
 }
 
 func (db *PostgresDB) CreateTask(t *task.Task) (*task.Task, error) {
-	query := "insert into tasks	(id, user_id, payloud, max_retries"
-	values := "values (@id, @user_id, @payloud, @max_retries"
+	query := "insert into tasks	(id, user_id, payload, max_retries"
+	values := "values (@id, @user_id, @payload, @max_retries"
 
 	args := pgx.NamedArgs{
 		"id":          t.ID,
 		"user_id":     t.UserID,
-		"payloud":     t.Payloud,
+		"payload":     t.Payload,
 		"max_retries": t.MaxRetries,
 	}
 
@@ -53,7 +53,7 @@ func (db *PostgresDB) CreateTask(t *task.Task) (*task.Task, error) {
 
 	var createdTask task.Task
 	err := db.QueryRow(db.ctx, query, args).Scan(
-		&createdTask.ID, &createdTask.UserID, &createdTask.Payloud,
+		&createdTask.ID, &createdTask.UserID, &createdTask.Payload,
 		&createdTask.Status, &createdTask.Retries, &createdTask.MaxRetries,
 		&createdTask.RunAt, &createdTask.CreatedAt, &createdTask.UpdatedAt,
 	)
@@ -73,7 +73,7 @@ func (db *PostgresDB) GetTask(userID uint64, taskID uuid.UUID) (*task.Task, erro
 
 	var t task.Task
 	err := db.QueryRow(db.ctx, query, args).Scan(
-		&t.ID, &t.UserID, &t.Payloud,
+		&t.ID, &t.UserID, &t.Payload,
 		&t.Status, &t.Retries, &t.MaxRetries,
 		&t.RunAt, &t.CreatedAt, &t.UpdatedAt,
 	)
@@ -102,7 +102,7 @@ func (db *PostgresDB) GetAllTasks(userID uint64) ([]task.Task, error) {
 	for rows.Next() {
 		t := task.Task{}
 		err := rows.Scan(
-			&t.ID, &t.UserID, &t.Payloud,
+			&t.ID, &t.UserID, &t.Payload,
 			&t.Status, &t.Retries, &t.MaxRetries,
 			&t.RunAt, &t.CreatedAt, &t.UpdatedAt,
 		)

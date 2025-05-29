@@ -9,7 +9,7 @@ import (
 type Task struct {
 	ID         uuid.UUID         `json:"id"`
 	UserID     uint64            `json:"user_id"`
-	Payloud    map[string]string `json:"payloud"`
+	Payload    map[string]string `json:"payload"`
 	Status     string            `json:"status"`
 	Retries    uint8             `json:"retries"`
 	MaxRetries uint8             `json:"max_retries"`

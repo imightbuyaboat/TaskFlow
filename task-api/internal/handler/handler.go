@@ -103,11 +103,11 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	}
 
 	h.logger.Info("successfully authorizate user", zap.String("email", u.Email), zap.Uint64("user_id", userID))
-	c.JSON(http.StatusOK, gin.H{"token": "Bearer" + token})
+	c.JSON(http.StatusOK, gin.H{"token": "Bearer " + token})
 }
 
 type createTaskReq struct {
-	Payloud    map[string]string `json:"payloud" binding:"required"`
+	Payload    map[string]string `json:"payload" binding:"required"`
 	MaxRetries *uint8            `json:"max_retries"`
 	RunAt      *time.Time        `json:"run_at"`
 }
@@ -147,7 +147,7 @@ func (h *Handler) CreateTaskHandler(c *gin.Context) {
 	t := task.Task{
 		ID:         taskID,
 		UserID:     userID,
-		Payloud:    req.Payloud,
+		Payload:    req.Payload,
 		MaxRetries: *req.MaxRetries,
 		RunAt:      req.RunAt,
 	}
