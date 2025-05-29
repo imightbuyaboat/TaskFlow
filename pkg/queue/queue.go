@@ -44,16 +44,6 @@ func NewQueue(amqpURL string) (*Queue, error) {
 	}, nil
 }
 
-func (q *Queue) Close() error {
-	if err := q.channel.Close(); err != nil {
-		return fmt.Errorf("failed to close channel: %v", err)
-	}
-	if err := q.connection.Close(); err != nil {
-		return fmt.Errorf("failed to close connection: %v", err)
-	}
-	return nil
-}
-
 func (q *Queue) Publish(t *task.Task) error {
 	body, err := json.Marshal(&t)
 	if err != nil {

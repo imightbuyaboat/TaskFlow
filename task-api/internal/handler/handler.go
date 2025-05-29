@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
 	"github.com/imightbuyaboat/TaskFlow/pkg/task"
 	"github.com/imightbuyaboat/TaskFlow/task-api/internal/auth"
 	"github.com/imightbuyaboat/TaskFlow/task-api/internal/db"
-	"github.com/imightbuyaboat/TaskFlow/task-api/internal/queue"
 	"github.com/imightbuyaboat/TaskFlow/task-api/internal/user"
 	"go.uber.org/zap"
 )
