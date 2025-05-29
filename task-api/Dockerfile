@@ -16,11 +16,11 @@ WORKDIR /app
 
 COPY --from=builder /TaskFlow/task-api/main .
 COPY deployments/.env .
-COPY task-api/wait-for-rabbitmq.sh .
+COPY task-api/wait-for-services.sh .
 
 RUN apk add --no-cache busybox-extras
-RUN chmod +x wait-for-rabbitmq.sh
+RUN chmod +x wait-for-services.sh
 
 EXPOSE 8080
 
-CMD ["./wait-for-rabbitmq.sh", "./main"]
+CMD ["./wait-for-services.sh", "./main"]
