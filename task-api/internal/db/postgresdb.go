@@ -45,8 +45,9 @@ func (db *PostgresDB) CreateTask(t *task.Task) (*task.Task, error) {
 
 	if t.RunAt != nil {
 		args["run_at"] = t.RunAt
-		query += ", run_at"
-		values += ", @run_at"
+		args["status"] = "postponed"
+		query += ", run_at, status"
+		values += ", @run_at, @status"
 	}
 
 	query += ") " + values + ") returning *"

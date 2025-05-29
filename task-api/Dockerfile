@@ -16,7 +16,7 @@ WORKDIR /app
 
 COPY --from=builder /TaskFlow/task-api/main .
 COPY deployments/.env .
-COPY task-api/wait-for-services.sh .
+COPY deployments/wait-for-services.sh .
 
 RUN apk add --no-cache busybox-extras
 RUN chmod +x wait-for-services.sh

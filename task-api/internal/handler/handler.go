@@ -158,9 +158,13 @@ func (h *Handler) CreateTaskHandler(c *gin.Context) {
 		return
 	}
 
-	err = h.queue.Publish(createdTask)
-	if err != nil {
-		h.logger.Error("failed to publish task in queue", zap.Error(err), zap.Uint64("user_id", userID), zap.String("task_id", taskID.String()))
+	if req.RunAt == nil {
+		err = h.queue.Publish(createdTask)
+		if err != nil {
+			h.logger.Error("failed to publish task in queue", zap.Error(err), zap.Uint64("user_id", userID), zap.String("task_id", taskID.String()))
+		} else {
+			h.logger.Info("successfully publish task", zap.Uint64("user_id", userID), zap.String("task_id", taskID.String()))
+		}
 	}
 
 	h.logger.Info("successfully created task", zap.Uint64("user_id", userID), zap.String("task_id", taskID.String()))
