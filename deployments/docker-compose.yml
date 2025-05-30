@@ -10,6 +10,13 @@ services:
     depends_on:
       - db
       - rabbitmq
+  task-schedular:
+    build:
+      context: ..
+      dockerfile: task-schedular/Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
   db:
     image: postgres:latest
     container_name: my_postgres
