@@ -21,7 +21,7 @@ const UserIDKey = "userID"
 
 type Handler struct {
 	db     db.DB
-	queue  *queue.Queue
+	queue  queue.Queue
 	logger *zap.Logger
 }
 
@@ -39,7 +39,7 @@ func NewHandler(logger *zap.Logger) (*Handler, error) {
 		os.Getenv("AMQP_USER"), os.Getenv("AMQP_PASSWORD"),
 		os.Getenv("AMQP_PORT"))
 
-	queue, err := queue.NewQueue(amqpURL)
+	queue, err := queue.NewRabbitMQQueue(amqpURL)
 	if err != nil {
 		return nil, err
 	}
@@ -106,12 +106,6 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": "Bearer " + token})
 }
 
-type createTaskReq struct {
-	Payload    map[string]string `json:"payload" binding:"required"`
-	MaxRetries *uint8            `json:"max_retries"`
-	RunAt      *time.Time        `json:"run_at"`
-}
-
 func (h *Handler) CreateTaskHandler(c *gin.Context) {
 	userID := c.GetUint64(UserIDKey)
 
@@ -119,6 +113,19 @@ func (h *Handler) CreateTaskHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Info("invalid body of request", zap.Error(err), zap.Uint64("user_id", userID))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid body of request"})
+		return
+	}
+
+	if !task.ValidateType(req.Type) {
+		h.logger.Info("invalid body of request", zap.Uint64("user_id", userID), zap.String("type", req.Type))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid type of task"})
+		return
+	}
+
+	err := task.ValidatePayload(req.Type, req.Payload)
+	if err != nil {
+		h.logger.Info("invalid body of request", zap.Uint64("user_id", userID), zap.Any("payload", req.Payload))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payload of task"})
 		return
 	}
 
@@ -147,6 +154,7 @@ func (h *Handler) CreateTaskHandler(c *gin.Context) {
 	t := task.Task{
 		ID:         taskID,
 		UserID:     userID,
+		Type:       req.Type,
 		Payload:    req.Payload,
 		MaxRetries: *req.MaxRetries,
 		RunAt:      req.RunAt,

@@ -8,6 +8,7 @@ CREATE TABLE users (
 CREATE TABLE tasks (
     id UUID PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
+    type TEXT NOT NULL,
     payload JSONB NOT NULL,
     status TEXT NOT NULL DEFAULT 'queued',
     retries INTEGER DEFAULT 0,
@@ -30,14 +31,13 @@ BEGIN
     CASE
         WHEN TG_OP = 'INSERT' THEN
             INSERT INTO task_logs (task_id, message)
-            VALUES (NEW.id, 'task ' || NEW.id || ' created');
+            VALUES (NEW.id, 'task has been created');
 
         WHEN TG_OP = 'UPDATE' THEN
             INSERT INTO task_logs (task_id, message)
             VALUES (
                 NEW.id,
-                'updated status for task ' || OLD.id ||
-                ' from "' || OLD.status || '" to "' || NEW.status || '"'
+                'updated status from "' || OLD.status || '" to "' || NEW.status || '"'
             );
     END CASE;
 
