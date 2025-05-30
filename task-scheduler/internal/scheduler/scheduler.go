@@ -12,11 +12,10 @@ import (
 )
 
 type Schedular struct {
-	interval   time.Duration
-	IntervalMs int `json:"schedulerIntervalMs"`
-	db         db.DB
-	queue      queue.Queue
-	logger     *zap.Logger
+	interval time.Duration
+	db       db.DB
+	queue    queue.Queue
+	logger   *zap.Logger
 }
 
 func NewSchedular(logger *zap.Logger) (*Schedular, error) {
@@ -25,12 +24,15 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 		return nil, err
 	}
 
-	scheduler := &Schedular{}
-	if err = json.NewDecoder(f).Decode(scheduler); err != nil {
+	var configsFromFile struct {
+		IntervalMs int `json:"schedulerIntervalMs"`
+	}
+
+	if err = json.NewDecoder(f).Decode(&configsFromFile); err != nil {
 		return nil, err
 	}
 
-	if scheduler.IntervalMs <= 0 {
+	if configsFromFile.IntervalMs <= 0 {
 		return nil, fmt.Errorf("missing or incorrect interval")
 	}
 
@@ -52,12 +54,12 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 		return nil, err
 	}
 
-	scheduler.interval = time.Duration(scheduler.IntervalMs) * time.Millisecond
-	scheduler.db = db
-	scheduler.queue = queue
-	scheduler.logger = logger
-
-	return scheduler, nil
+	return &Schedular{
+		interval: time.Duration(configsFromFile.IntervalMs) * time.Millisecond,
+		db:       db,
+		queue:    queue,
+		logger:   logger,
+	}, nil
 }
 
 func (s *Schedular) EnterLoop() {
