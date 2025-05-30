@@ -1,4 +1,4 @@
-package schedular
+package scheduler
 
 import (
 	"encoding/json"
@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
-	"github.com/imightbuyaboat/TaskFlow/task-schedular/internal/db"
+	"github.com/imightbuyaboat/TaskFlow/task-scheduler/internal/db"
 	"go.uber.org/zap"
 )
 
 type Schedular struct {
 	interval   time.Duration
-	IntervalMs int `json:"schedularIntervalMs"`
+	IntervalMs int `json:"schedulerIntervalMs"`
 	db         db.DB
 	queue      queue.Queue
 	logger     *zap.Logger
@@ -25,12 +25,12 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 		return nil, err
 	}
 
-	schedular := &Schedular{}
-	if err = json.NewDecoder(f).Decode(schedular); err != nil {
+	scheduler := &Schedular{}
+	if err = json.NewDecoder(f).Decode(scheduler); err != nil {
 		return nil, err
 	}
 
-	if schedular.IntervalMs <= 0 {
+	if scheduler.IntervalMs <= 0 {
 		return nil, fmt.Errorf("missing or incorrect interval")
 	}
 
@@ -52,12 +52,12 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 		return nil, err
 	}
 
-	schedular.interval = time.Duration(schedular.IntervalMs) * time.Millisecond
-	schedular.db = db
-	schedular.queue = queue
-	schedular.logger = logger
+	scheduler.interval = time.Duration(scheduler.IntervalMs) * time.Millisecond
+	scheduler.db = db
+	scheduler.queue = queue
+	scheduler.logger = logger
 
-	return schedular, nil
+	return scheduler, nil
 }
 
 func (s *Schedular) EnterLoop() {

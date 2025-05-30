@@ -1,4 +1,4 @@
-module github.com/imightbuyaboat/TaskFlow/task-schedular
+module github.com/imightbuyaboat/TaskFlow/task-scheduler
 
 go 1.23.0
 

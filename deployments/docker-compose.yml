@@ -10,10 +10,10 @@ services:
     depends_on:
       - db
       - rabbitmq
-  task-schedular:
+  task-scheduler:
     build:
       context: ..
-      dockerfile: task-schedular/Dockerfile
+      dockerfile: task-scheduler/Dockerfile
     depends_on:
       - db
       - rabbitmq
