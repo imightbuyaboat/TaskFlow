@@ -17,6 +17,13 @@ services:
     depends_on:
       - db
       - rabbitmq
+  task-worker:
+    build:
+      context: ..
+      dockerfile: task-worker/Dockerfile
+    depends_on:
+      - db
+      - rabbitmq
   db:
     image: postgres:latest
     container_name: my_postgres

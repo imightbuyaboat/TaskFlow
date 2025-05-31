@@ -3,6 +3,7 @@ package task
 import (
 	"encoding/json"
 	"fmt"
+	"net/mail"
 )
 
 var validatePayloadsFunctions = map[string]func(map[string]interface{}) error{
@@ -39,6 +40,11 @@ func validateSendEmailPayload(payload map[string]interface{}) error {
 
 	if semp.To == "" {
 		return fmt.Errorf("field 'to' cant be empty")
+	}
+
+	_, err = mail.ParseAddress(semp.To)
+	if err != nil {
+		return fmt.Errorf("incorrect address in filed 'To'")
 	}
 
 	if semp.Subject == "" && semp.Body == "" && semp.AttachedFiles == nil {

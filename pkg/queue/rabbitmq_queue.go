@@ -45,7 +45,7 @@ func NewRabbitMQQueue(amqpURL string) (*RabbitMQQueue, error) {
 }
 
 func (q *RabbitMQQueue) Publish(t *task.Task) error {
-	body, err := json.Marshal(&t)
+	body, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Errorf("failed to marshal task: %v", err)
 	}
@@ -56,8 +56,9 @@ func (q *RabbitMQQueue) Publish(t *task.Task) error {
 		false,
 		false,
 		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        body,
+			ContentType:  "application/json",
+			Body:         body,
+			DeliveryMode: amqp.Persistent,
 		},
 	)
 	if err != nil {
@@ -65,4 +66,37 @@ func (q *RabbitMQQueue) Publish(t *task.Task) error {
 	}
 
 	return nil
+}
+
+func (q *RabbitMQQueue) NewConsumerChannel() (*amqp.Channel, <-chan amqp.Delivery, error) {
+	ch, err := q.connection.Channel()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to open channel: %v", err)
+	}
+
+	err = ch.Qos(
+		1,
+		0,
+		false,
+	)
+	if err != nil {
+		ch.Close()
+		return nil, nil, fmt.Errorf("failed to set Qos: %v", err)
+	}
+
+	msgs, err := ch.Consume(
+		q.queue.Name,
+		"",
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		ch.Close()
+		return nil, nil, fmt.Errorf("failed to register consumer: %v", err)
+	}
+
+	return ch, msgs, nil
 }
