@@ -15,7 +15,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func CreateToken(userID uint64) (string, error) {
+type JWTManager struct{}
+
+func NewJWTManager() *JWTManager {
+	return &JWTManager{}
+}
+
+func (m *JWTManager) CreateToken(userID uint64) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -28,7 +34,7 @@ func CreateToken(userID uint64) (string, error) {
 	return token.SignedString(secretKey)
 }
 
-func ValidateToken(tokenStr string) (uint64, error) {
+func (m *JWTManager) ValidateToken(tokenStr string) (uint64, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(t *jwt.Token) (interface{}, error) {
 		if t.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("unexpected signing method")

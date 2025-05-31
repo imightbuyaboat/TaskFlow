@@ -2,9 +2,7 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,34 +18,18 @@ import (
 const UserIDKey = "userID"
 
 type Handler struct {
-	db     db.DB
-	queue  queue.Queue
-	logger *zap.Logger
+	db           db.DB
+	queue        queue.Queue
+	tokenManager auth.TokenManager
+	logger       *zap.Logger
 }
 
-func NewHandler(logger *zap.Logger) (*Handler, error) {
-	postgresURL := fmt.Sprintf("postgres://%s:%s@db:%s/%s",
-		os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_PORT"), os.Getenv("POSTGRES_DB"))
-
-	db, err := db.NewPostgresDB(postgresURL)
-	if err != nil {
-		return nil, err
-	}
-
-	amqpURL := fmt.Sprintf("amqp://%s:%s@rabbitmq:%s/",
-		os.Getenv("AMQP_USER"), os.Getenv("AMQP_PASSWORD"),
-		os.Getenv("AMQP_PORT"))
-
-	queue, err := queue.NewRabbitMQQueue(amqpURL)
-	if err != nil {
-		return nil, err
-	}
-
+func NewHandler(db db.DB, queue queue.Queue, tm auth.TokenManager, logger *zap.Logger) (*Handler, error) {
 	return &Handler{
-		db:     db,
-		queue:  queue,
-		logger: logger,
+		db:           db,
+		queue:        queue,
+		tokenManager: tm,
+		logger:       logger,
 	}, nil
 }
 
@@ -95,7 +77,7 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := auth.CreateToken(userID)
+	token, err := h.tokenManager.CreateToken(userID)
 	if err != nil {
 		h.logger.Error("failed to create token", zap.Error(err), zap.String("email", u.Email), zap.Uint64("user_id", userID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create token"})

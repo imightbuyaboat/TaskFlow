@@ -21,7 +21,7 @@ func (h *Handler) AuthMiddleware() gin.HandlerFunc {
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 
-		userID, err := auth.ValidateToken(token)
+		userID, err := h.tokenManager.ValidateToken(token)
 		if err != nil {
 			if errors.Is(err, auth.ErrInvalidToken) {
 				h.logger.Info("request with invalid token", zap.String("token", token))
