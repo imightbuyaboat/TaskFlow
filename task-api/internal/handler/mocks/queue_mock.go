@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	task "github.com/imightbuyaboat/TaskFlow/pkg/task"
+	amqp091_go "github.com/rabbitmq/amqp091-go"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -38,6 +39,22 @@ func NewMockQueue(ctrl *gomock.Controller) *MockQueue {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockQueue) EXPECT() *MockQueueMockRecorder {
 	return m.recorder
+}
+
+// NewConsumerChannel mocks base method.
+func (m *MockQueue) NewConsumerChannel() (*amqp091_go.Channel, <-chan amqp091_go.Delivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewConsumerChannel")
+	ret0, _ := ret[0].(*amqp091_go.Channel)
+	ret1, _ := ret[1].(<-chan amqp091_go.Delivery)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// NewConsumerChannel indicates an expected call of NewConsumerChannel.
+func (mr *MockQueueMockRecorder) NewConsumerChannel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewConsumerChannel", reflect.TypeOf((*MockQueue)(nil).NewConsumerChannel))
 }
 
 // Publish mocks base method.
