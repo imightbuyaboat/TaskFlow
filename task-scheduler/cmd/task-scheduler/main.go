@@ -15,7 +15,7 @@ func main() {
 		log.Fatal("failed to load .env file", zap.Error(err))
 	}
 
-	s, err := scheduler.NewSchedular(log)
+	s, err := scheduler.NewScheduler(log)
 	if err != nil {
 		log.Fatal("failed to create scheduler", zap.Error(err))
 	}

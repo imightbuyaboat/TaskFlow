@@ -11,14 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type Schedular struct {
+type Scheduler struct {
 	interval time.Duration
 	db       db.DB
 	queue    queue.Queue
 	logger   *zap.Logger
 }
 
-func NewSchedular(logger *zap.Logger) (*Schedular, error) {
+func NewScheduler(logger *zap.Logger) (*Scheduler, error) {
 	f, err := os.Open("config.json")
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 		return nil, err
 	}
 
-	return &Schedular{
+	return &Scheduler{
 		interval: time.Duration(configsFromFile.IntervalMs) * time.Millisecond,
 		db:       db,
 		queue:    queue,
@@ -62,7 +62,7 @@ func NewSchedular(logger *zap.Logger) (*Schedular, error) {
 	}, nil
 }
 
-func (s *Schedular) EnterLoop() {
+func (s *Scheduler) EnterLoop() {
 	for {
 		time.Sleep(s.interval)
 
@@ -70,7 +70,7 @@ func (s *Schedular) EnterLoop() {
 	}
 }
 
-func (s *Schedular) processTasks() {
+func (s *Scheduler) processTasks() {
 	tasks, err := s.db.GetPostponedTasks()
 	if err != nil {
 		s.logger.Error("failed to select postponed tasks", zap.Error(err))
