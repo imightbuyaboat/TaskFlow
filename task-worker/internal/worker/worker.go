@@ -54,7 +54,13 @@ func (w *Worker) processMsg(d *amqp.Delivery) {
 		return
 	}
 
-	if err := w.db.UpdateStatusOfTask(t.ID, "in_progress"); err != nil {
+	if err := w.db.UpdateStatusOfTask(t.ID, "processing"); err != nil {
+		if err == db.ErrMaxRetriesReached {
+			w.logger.Info("reached max retries", zap.Int("worker", w.id), zap.String("task_id", t.ID.String()))
+			d.Nack(false, false)
+			return
+		}
+
 		w.logger.Error("failed to update status of task", zap.Error(err), zap.Int("worker", w.id), zap.String("task_id", t.ID.String()))
 		d.Nack(false, false)
 		return
@@ -66,7 +72,7 @@ func (w *Worker) processMsg(d *amqp.Delivery) {
 		if err := w.db.UpdateStatusOfTask(t.ID, "error"); err != nil {
 			w.logger.Error("failed to update status of task", zap.Error(err), zap.Int("worker", w.id), zap.String("task_id", t.ID.String()))
 		}
-		d.Nack(false, false)
+		d.Nack(false, true)
 		return
 	}
 

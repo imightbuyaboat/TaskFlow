@@ -31,8 +31,7 @@ func NewPostgresDB(postgresURL string) (*PostgresDB, error) {
 func (db *PostgresDB) GetPostponedTasks() ([]task.Task, error) {
 	query := `select * from tasks
 	where (status = 'postponed' and now() >= run_at)
-	or (status = 'queued' and extract(hour from (now() - run_at)) > 1)
-	or (status = 'error' and retries < max_retries)`
+	or (status = 'queued' and extract(hour from (now() - run_at)) > 1)`
 
 	rows, err := db.Query(db.ctx, query)
 	if err != nil {

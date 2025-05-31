@@ -29,14 +29,29 @@ func NewPostgresDB(postgresURL string) (*PostgresDB, error) {
 
 func (db *PostgresDB) UpdateStatusOfTask(taskID uuid.UUID, status string) error {
 	query := "update tasks set status = @status"
-	if status == "in_progress" {
+	if status == "processing" {
 		query += ", retries = retries + 1"
 	}
 	query += " where id = @task_id"
 
+	if status == "processing" {
+		query += " and retries < max_retries returning id"
+	}
+
 	args := pgx.NamedArgs{
 		"status":  status,
 		"task_id": taskID,
+	}
+
+	if status == "processing" {
+		var id uuid.UUID
+		if err := db.QueryRow(db.ctx, query, args).Scan(&id); err != nil {
+			if err == pgx.ErrNoRows {
+				return ErrMaxRetriesReached
+			}
+			return fmt.Errorf("failed to update task status: %v", err)
+		}
+		return nil
 	}
 
 	_, err := db.Exec(db.ctx, query, args)
