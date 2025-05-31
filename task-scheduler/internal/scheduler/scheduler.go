@@ -1,9 +1,6 @@
 package scheduler
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
@@ -18,44 +15,9 @@ type Scheduler struct {
 	logger   *zap.Logger
 }
 
-func NewScheduler(logger *zap.Logger) (*Scheduler, error) {
-	f, err := os.Open("config.json")
-	if err != nil {
-		return nil, err
-	}
-
-	var configsFromFile struct {
-		IntervalMs int `json:"schedulerIntervalMs"`
-	}
-
-	if err = json.NewDecoder(f).Decode(&configsFromFile); err != nil {
-		return nil, err
-	}
-
-	if configsFromFile.IntervalMs <= 0 {
-		return nil, fmt.Errorf("missing or incorrect interval")
-	}
-
-	postgresURL := fmt.Sprintf("postgres://%s:%s@db:%s/%s",
-		os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_PORT"), os.Getenv("POSTGRES_DB"))
-
-	db, err := db.NewPostgresDB(postgresURL)
-	if err != nil {
-		return nil, err
-	}
-
-	amqpURL := fmt.Sprintf("amqp://%s:%s@rabbitmq:%s/",
-		os.Getenv("AMQP_USER"), os.Getenv("AMQP_PASSWORD"),
-		os.Getenv("AMQP_PORT"))
-
-	queue, err := queue.NewRabbitMQQueue(amqpURL)
-	if err != nil {
-		return nil, err
-	}
-
+func NewScheduler(interval time.Duration, db db.DB, queue queue.Queue, logger *zap.Logger) (*Scheduler, error) {
 	return &Scheduler{
-		interval: time.Duration(configsFromFile.IntervalMs) * time.Millisecond,
+		interval: interval,
 		db:       db,
 		queue:    queue,
 		logger:   logger,
