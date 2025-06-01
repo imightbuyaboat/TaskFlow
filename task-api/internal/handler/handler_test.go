@@ -264,6 +264,8 @@ func TestCreateTaskHandler(t *testing.T) {
 		UpdatedAt:  updatedAt,
 	}
 
+	invalidRunAt := time.Now().Add(-1 * time.Hour)
+
 	tests := []struct {
 		name           string
 		body           interface{}
@@ -274,12 +276,7 @@ func TestCreateTaskHandler(t *testing.T) {
 	}{
 		{
 			name: "Successfully task creation",
-			body: struct {
-				Type       string                 `json:"type" binding:"required"`
-				Payload    map[string]interface{} `json:"payload" binding:"required"`
-				MaxRetries *uint8                 `json:"max_retries"`
-				RunAt      *time.Time             `json:"run_at"`
-			}{
+			body: createTaskReq{
 				Type: "send_email",
 				Payload: map[string]interface{}{
 					"to":      "test@test.com",
@@ -305,6 +302,89 @@ func TestCreateTaskHandler(t *testing.T) {
 				"updated_at":  createdTask.UpdatedAt.Format(time.RFC3339Nano),
 			},
 		},
+		{
+			name: "Invalid body of request",
+			body: createTaskReq{
+				Type: "send_email",
+			},
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "Invalid body of request"},
+		},
+		{
+			name: "Invalid type of task",
+			body: createTaskReq{
+				Type: "invalid type",
+				Payload: map[string]interface{}{
+					"to":      "test@test.com",
+					"subject": "test",
+				},
+			},
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "invalid type of task"},
+		},
+		{
+			name: "Invalid payload of task",
+			body: createTaskReq{
+				Type: "send_email",
+				Payload: map[string]interface{}{
+					"to": "invalid email",
+				},
+			},
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "invalid payload of task"},
+		},
+		{
+			name: "Invalid max_retries of task",
+			body: createTaskReq{
+				Type: "send_email",
+				Payload: map[string]interface{}{
+					"to":      "test@test.com",
+					"subject": "test",
+				},
+				MaxRetries: new(uint8),
+			},
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "max_retries should be between 1 and 10"},
+		},
+		{
+			name: "Invalid run_at of task",
+			body: createTaskReq{
+				Type: "send_email",
+				Payload: map[string]interface{}{
+					"to":      "test@test.com",
+					"subject": "test",
+				},
+				RunAt: &invalidRunAt,
+			},
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "run_at must be in the future"},
+		},
+		{
+			name: "db error",
+			body: createTaskReq{
+				Type: "send_email",
+				Payload: map[string]interface{}{
+					"to":      "test@test.com",
+					"subject": "test",
+				},
+			},
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().CreateTask(gomock.Any()).Return(nil, errors.New("db error"))
+			},
+			mockQueueSetup: func(q *mocks.MockQueue) {},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   gin.H{"error": "Failed to create task"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -320,6 +400,173 @@ func TestCreateTaskHandler(t *testing.T) {
 			c.Request = req
 
 			h.CreateTaskHandler(c)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			var responseBody gin.H
+			if err := json.Unmarshal(w.Body.Bytes(), &responseBody); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, tt.expectedBody, responseBody)
+		})
+	}
+}
+
+func TestGetTaskHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDB(ctrl)
+	logger := zaptest.NewLogger(t)
+	h, _ := NewHandler(mockDB, nil, nil, logger)
+
+	taskID := uuid.New()
+	runAt := time.Now().Add(time.Hour)
+	createdAt := time.Now()
+	updatedAt := createdAt
+
+	gettedTask := task.Task{
+		ID:     taskID,
+		UserID: 1,
+		Type:   "send_email",
+		Payload: map[string]interface{}{
+			"to":      "test@test.com",
+			"subject": "test",
+		},
+		Status:     "queued",
+		Retries:    0,
+		MaxRetries: 3,
+		RunAt:      &runAt,
+		CreatedAt:  createdAt,
+		UpdatedAt:  updatedAt,
+	}
+
+	tests := []struct {
+		name           string
+		taskIDStr      string
+		mockBDSetup    func(db *mocks.MockDB)
+		expectedStatus int
+		expectedBody   gin.H
+	}{
+		{
+			name:      "Successfully get task",
+			taskIDStr: taskID.String(),
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().GetTask(gomock.Any(), gomock.Any()).Return(&gettedTask, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: gin.H{
+				"id":          gettedTask.ID.String(),
+				"user_id":     float64(gettedTask.UserID),
+				"type":        gettedTask.Type,
+				"payload":     gettedTask.Payload,
+				"status":      gettedTask.Status,
+				"retries":     float64(gettedTask.Retries),
+				"max_retries": float64(gettedTask.MaxRetries),
+				"run_at":      gettedTask.RunAt.Format(time.RFC3339Nano),
+				"created_at":  gettedTask.CreatedAt.Format(time.RFC3339Nano),
+				"updated_at":  gettedTask.UpdatedAt.Format(time.RFC3339Nano),
+			},
+		},
+		{
+			name:           "Failed to parse tas_id",
+			taskIDStr:      "invalid id",
+			mockBDSetup:    func(db *mocks.MockDB) {},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   gin.H{"error": "Failed to parse task ID"},
+		},
+		{
+			name:      "Incorrect task_id",
+			taskIDStr: uuid.New().String(),
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().GetTask(gomock.Any(), gomock.Any()).Return(nil, pdb.ErrNoRows)
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   gin.H{"error": "Incorrect task ID"},
+		},
+		{
+			name:      "db error",
+			taskIDStr: uuid.New().String(),
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().GetTask(gomock.Any(), gomock.Any()).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   gin.H{"error": "Failed to get task"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBDSetup(mockDB)
+
+			req, _ := http.NewRequest(http.MethodGet, "/api/tasks/"+tt.taskIDStr, nil)
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = req
+			c.Params = gin.Params{gin.Param{
+				Key:   "id",
+				Value: tt.taskIDStr,
+			}}
+
+			h.GetTaskHandler(c)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+
+			var responseBody gin.H
+			if err := json.Unmarshal(w.Body.Bytes(), &responseBody); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, tt.expectedBody, responseBody)
+		})
+	}
+}
+
+func TestGetAllTasksHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDB := mocks.NewMockDB(ctrl)
+	logger := zaptest.NewLogger(t)
+	h, _ := NewHandler(mockDB, nil, nil, logger)
+
+	tests := []struct {
+		name           string
+		mockBDSetup    func(db *mocks.MockDB)
+		expectedStatus int
+		expectedBody   gin.H
+	}{
+		{
+			name: "Successfully get tasks",
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().GetAllTasks(gomock.Any()).Return(nil, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody:   nil,
+		},
+		{
+			name: "db error",
+			mockBDSetup: func(db *mocks.MockDB) {
+				db.EXPECT().GetAllTasks(gomock.Any()).Return(nil, errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   gin.H{"error": "Failed to get tasks"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBDSetup(mockDB)
+
+			req, _ := http.NewRequest(http.MethodGet, "/api/tasks", nil)
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(w)
+			c.Request = req
+
+			h.GetAllTasksHandler(c)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 
