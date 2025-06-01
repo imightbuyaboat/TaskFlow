@@ -21,6 +21,8 @@ services:
     build:
       context: ..
       dockerfile: task-worker/Dockerfile
+    volumes:
+      - ${HOST_IMAGE_PATH}:/images
     depends_on:
       - db
       - rabbitmq

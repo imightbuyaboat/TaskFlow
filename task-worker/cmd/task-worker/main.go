@@ -9,6 +9,7 @@ import (
 	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/db"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/email"
+	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/image_processing"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/worker"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -40,13 +41,16 @@ func main() {
 		log.Fatal("failed to create RabbitMQ connection", zap.Error(err))
 	}
 
-	dialer, err := email.NewMailDialer()
+	mailDialer, err := email.NewMailDialer()
 	if err != nil {
 		log.Fatal("failed to create mail dialer", zap.Error(err))
 	}
 
+	imageProcessor := image_processing.NewImageProcessor()
+
 	executers := map[string]worker.Executer{
-		"send_email": dialer,
+		"send_email":    mailDialer,
+		"process_image": imageProcessor,
 	}
 
 	numOfWorkersStr := os.Getenv("NUMOFWORKERS")
