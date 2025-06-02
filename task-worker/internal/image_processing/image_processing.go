@@ -3,6 +3,8 @@ package image_processing
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/disintegration/imaging"
@@ -10,10 +12,14 @@ import (
 	"github.com/imightbuyaboat/TaskFlow/pkg/task"
 )
 
-type ImageProcessor struct{}
+type ImageProcessor struct {
+	baseFilePath string
+}
 
 func NewImageProcessor() *ImageProcessor {
-	return &ImageProcessor{}
+	return &ImageProcessor{
+		baseFilePath: os.Getenv("BASE_FILE_PATH"),
+	}
 }
 
 func (ip *ImageProcessor) ExecuteTask(rawPayload interface{}) error {
@@ -27,7 +33,8 @@ func (ip *ImageProcessor) ExecuteTask(rawPayload interface{}) error {
 		return fmt.Errorf("failed to unmarshal payload to ImageProcessingPayload: %v", err)
 	}
 
-	src, err := imaging.Open(payload.Path)
+	srcPath := filepath.Join(ip.baseFilePath, payload.Path)
+	src, err := imaging.Open(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to open source image: %v", err)
 	}
@@ -45,9 +52,9 @@ func (ip *ImageProcessor) ExecuteTask(rawPayload interface{}) error {
 	src = imaging.AdjustBrightness(src, payload.Brightness)
 	src = imaging.AdjustSaturation(src, payload.Saturation)
 
-	lastPointIndex := strings.LastIndex(payload.Path, ".")
+	lastPointIndex := strings.LastIndex(srcPath, ".")
 
-	dstPath := payload.Path[:lastPointIndex] + "_" + uuid.New().String() + payload.Path[lastPointIndex:]
+	dstPath := srcPath[:lastPointIndex] + "_" + uuid.New().String() + srcPath[lastPointIndex:]
 	err = imaging.Save(src, dstPath)
 	if err != nil {
 		return fmt.Errorf("failed to save image: %v", err)

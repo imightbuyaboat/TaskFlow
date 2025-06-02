@@ -22,7 +22,7 @@ services:
       context: ..
       dockerfile: task-worker/Dockerfile
     volumes:
-      - ${HOST_IMAGE_PATH}:/images
+      - ${HOST_FILE_PATH}:${BASE_FILE_PATH}
     depends_on:
       - db
       - rabbitmq

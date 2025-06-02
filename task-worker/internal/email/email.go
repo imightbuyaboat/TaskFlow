@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/mail"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/imightbuyaboat/TaskFlow/pkg/task"
@@ -12,8 +13,9 @@ import (
 )
 
 type MailDialer struct {
-	dialer *gomail.Dialer
-	from   string
+	dialer       *gomail.Dialer
+	from         string
+	baseFilePath string
 }
 
 func NewMailDialer() (*MailDialer, error) {
@@ -22,6 +24,8 @@ func NewMailDialer() (*MailDialer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("incorrect mail address: %v", err)
 	}
+
+	baseFilePath := os.Getenv("BASE_FILE_PATH")
 
 	host := os.Getenv("MAIL_HOST")
 	portStr := os.Getenv("MAIL_PORT")
@@ -40,8 +44,9 @@ func NewMailDialer() (*MailDialer, error) {
 	d := gomail.NewDialer(host, port, username, password)
 
 	return &MailDialer{
-		dialer: d,
-		from:   from,
+		dialer:       d,
+		from:         from,
+		baseFilePath: baseFilePath,
 	}, nil
 }
 
@@ -69,7 +74,8 @@ func (md *MailDialer) ExecuteTask(rawPayload interface{}) error {
 	}
 
 	if payload.AttachedFiles != nil {
-		for _, filePath := range payload.AttachedFiles {
+		for _, fileName := range payload.AttachedFiles {
+			filePath := filepath.Join(md.baseFilePath, fileName)
 			m.Attach(filePath)
 		}
 	}
