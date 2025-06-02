@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -71,9 +72,24 @@ func (fd *FileDownloader) ExecuteTask(rawPayload interface{}) error {
 				return
 			}
 
-			lastPointIndex := strings.LastIndex(url, ".")
+			contentType := resp.Header.Get("Content-Type")
+			if index := strings.Index(contentType, ";"); index != -1 {
+				contentType = contentType[:index]
+			}
 
-			srcPath := filepath.Join(fd.baseFilePath, uuid.New().String()+url[lastPointIndex:])
+			exts, err := mime.ExtensionsByType(contentType)
+			ext := ".bin"
+			if err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+				return
+			}
+			if len(exts) > 0 {
+				ext = exts[0]
+			}
+
+			srcPath := filepath.Join(fd.baseFilePath, uuid.New().String()+ext)
 			out, err := os.Create(srcPath)
 			if err != nil {
 				mu.Lock()
