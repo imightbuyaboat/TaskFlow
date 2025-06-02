@@ -7,8 +7,9 @@ import (
 )
 
 var validatePayloadsFunctions = map[string]func(map[string]interface{}) error{
-	"send_email":    validateSendEmailPayload,
-	"process_image": validateImageProcessingPayload,
+	"send_email":     validateSendEmailPayload,
+	"process_image":  validateImageProcessingPayload,
+	"download_files": validateFileDownloadingPayload,
 }
 
 type SendEmailPayload struct {
@@ -28,6 +29,10 @@ type ImageProcessingPayload struct {
 	Saturation float64 `json:"saturation"`
 	Grayscale  bool    `json:"grayscale"`
 	Invert     bool    `json:"invert"`
+}
+
+type FileDownloadingPayload struct {
+	URLs []string `json:"urls"`
 }
 
 func ValidateType(typeOfTask string) bool {
@@ -91,6 +96,29 @@ func validateImageProcessingPayload(payload map[string]interface{}) error {
 		ipp.Brightness < -100 || ipp.Brightness > 100 ||
 		ipp.Saturation < -100 || ipp.Saturation > 100 {
 		return fmt.Errorf("contrast, brightness, saturation must be in the range (-100, 100)")
+	}
+
+	return nil
+}
+
+func validateFileDownloadingPayload(payload map[string]interface{}) error {
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payload into json: %v", err)
+	}
+
+	var fdp FileDownloadingPayload
+	err = json.Unmarshal(jsonBytes, &fdp)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal json into payload: %v", err)
+	}
+
+	if fdp.URLs == nil {
+		return fmt.Errorf("missing URLs")
+	}
+
+	if len(fdp.URLs) == 0 {
+		return fmt.Errorf("missing URLs")
 	}
 
 	return nil

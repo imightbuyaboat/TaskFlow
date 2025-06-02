@@ -9,6 +9,7 @@ import (
 	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/db"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/email"
+	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/file_downloading"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/image_processing"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/worker"
 	"github.com/joho/godotenv"
@@ -47,10 +48,12 @@ func main() {
 	}
 
 	imageProcessor := image_processing.NewImageProcessor()
+	fileDonwloader := file_downloading.NewFileDownloader()
 
 	executers := map[string]worker.Executer{
-		"send_email":    mailDialer,
-		"process_image": imageProcessor,
+		"send_email":     mailDialer,
+		"process_image":  imageProcessor,
+		"download_files": fileDonwloader,
 	}
 
 	numOfWorkersStr := os.Getenv("NUMOFWORKERS")
