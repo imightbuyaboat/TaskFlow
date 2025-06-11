@@ -16,11 +16,11 @@ type Worker struct {
 	ch        *amqp.Channel
 	msgs      <-chan amqp.Delivery
 	executers map[string]Executer
-	db        db.DB
+	db        DB
 	logger    *zap.Logger
 }
 
-func NewWorker(id int, q queue.Queue, executers map[string]Executer, db db.DB, logger *zap.Logger) (*Worker, error) {
+func NewWorker(id int, q queue.Queue, executers map[string]Executer, db DB, logger *zap.Logger) (*Worker, error) {
 	ch, msgs, err := q.NewConsumerChannel()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create channel: %v", err)

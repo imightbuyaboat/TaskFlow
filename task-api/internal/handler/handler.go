@@ -18,13 +18,13 @@ import (
 const UserIDKey = "userID"
 
 type Handler struct {
-	db           db.DB
+	db           DB
 	queue        queue.Queue
 	tokenManager auth.TokenManager
 	logger       *zap.Logger
 }
 
-func NewHandler(db db.DB, queue queue.Queue, tm auth.TokenManager, logger *zap.Logger) (*Handler, error) {
+func NewHandler(db DB, queue queue.Queue, tm auth.TokenManager, logger *zap.Logger) (*Handler, error) {
 	return &Handler{
 		db:           db,
 		queue:        queue,

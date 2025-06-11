@@ -4,18 +4,17 @@ import (
 	"time"
 
 	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
-	"github.com/imightbuyaboat/TaskFlow/task-scheduler/internal/db"
 	"go.uber.org/zap"
 )
 
 type Scheduler struct {
 	interval time.Duration
-	db       db.DB
+	db       DB
 	queue    queue.Queue
 	logger   *zap.Logger
 }
 
-func NewScheduler(interval time.Duration, db db.DB, queue queue.Queue, logger *zap.Logger) (*Scheduler, error) {
+func NewScheduler(interval time.Duration, db DB, queue queue.Queue, logger *zap.Logger) (*Scheduler, error) {
 	return &Scheduler{
 		interval: interval,
 		db:       db,

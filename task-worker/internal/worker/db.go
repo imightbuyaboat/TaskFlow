@@ -1,4 +1,4 @@
-package db
+package worker
 
 import (
 	"github.com/google/uuid"
