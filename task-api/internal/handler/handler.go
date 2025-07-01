@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
 	"github.com/imightbuyaboat/TaskFlow/pkg/task"
 	"github.com/imightbuyaboat/TaskFlow/task-api/internal/auth"
 	"github.com/imightbuyaboat/TaskFlow/task-api/internal/db"
@@ -19,12 +18,12 @@ const UserIDKey = "userID"
 
 type Handler struct {
 	db           DB
-	queue        queue.Queue
+	queue        Queue
 	tokenManager auth.TokenManager
 	logger       *zap.Logger
 }
 
-func NewHandler(db DB, queue queue.Queue, tm auth.TokenManager, logger *zap.Logger) (*Handler, error) {
+func NewHandler(db DB, queue Queue, tm auth.TokenManager, logger *zap.Logger) (*Handler, error) {
 	return &Handler{
 		db:           db,
 		queue:        queue,

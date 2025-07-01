@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/imightbuyaboat/TaskFlow/pkg/queue"
 	"github.com/imightbuyaboat/TaskFlow/pkg/task"
 	"github.com/imightbuyaboat/TaskFlow/task-worker/internal/db"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -20,7 +19,7 @@ type Worker struct {
 	logger    *zap.Logger
 }
 
-func NewWorker(id int, q queue.Queue, executers map[string]Executer, db DB, logger *zap.Logger) (*Worker, error) {
+func NewWorker(id int, q Queue, executers map[string]Executer, db DB, logger *zap.Logger) (*Worker, error) {
 	ch, msgs, err := q.NewConsumerChannel()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create channel: %v", err)
